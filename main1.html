@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Vault - 8/3 Special</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        /* --- CÀI ĐẶT CHUNG --- */
+        :root {
+            --pink-pastel: #ffd1dc;
+            --purple-pastel: #e6e6fa;
+            --text-color: #5c4033;
+            --card-bg: #ffb6c1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, var(--pink-pastel), var(--purple-pastel));
+            background-attachment: fixed;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* --- MÀN HÌNH ĐĂNG NHẬP GLASSMORPHISM --- */
+        .login-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,182,193,0.8), rgba(230,230,250,0.8));
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .wrapper {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 20px rgba(255, 182, 193, 0.5);
+            border-radius: 20px;
+            padding: 40px 30px;
+            font-family: "Poppins", sans-serif;
+        }
+
+        .wrapper h1 { font-size: 32px; text-align: center; color: #d87093; margin-bottom: 5px; }
+        .wrapper p.subtitle { text-align: center; margin-bottom: 25px; font-size: 0.9em; color: #5c4033; }
+
+        .input-box { position: relative; width: 100%; height: 50px; margin-bottom: 25px; }
+        .input-box input {
+            width: 100%; height: 100%; background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.8); border-radius: 40px;
+            font-size: 16px; color: #5c4033; padding: 20px 45px 20px 20px;
+            outline: none; font-family: "Poppins", sans-serif;
+        }
+        .input-box input::placeholder { color: #888; }
+        .input-box i { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #d87093; }
+
+        .btn {
+            width: 100%; height: 45px; background: #ffb6c1; border: none; outline: none;
+            border-radius: 40px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer; font-size: 16px; color: #fff; font-weight: 700;
+            transition: 0.3s; font-family: "Poppins", sans-serif;
+        }
+        .btn:hover { background: #d87093; transform: scale(1.02); }
+
+        .register-link { text-align: center; margin-top: 20px; font-size: 14px; font-weight: 500; }
+
+        /* --- GIAO DIỆN GAME LẬT BÀI --- */
+        #gameArea { display: none; width: 100%; max-width: 600px; flex-direction: column; align-items: center; }
+        
+        header { text-align: center; margin-bottom: 15px; }
+        header h1 { color: #d87093; font-size: 2.2rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        header p { font-size: 1.1rem; font-weight: 600; }
+
+        .dashboard {
+            display: flex; gap: 20px; background: rgba(255, 255, 255, 0.6);
+            padding: 10px 25px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px; font-size: 1.2rem; font-weight: bold;
+        }
+
+        .grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; perspective: 1000px;
+        }
+
+        .card {
+            aspect-ratio: 1/1; position: relative; transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+            cursor: pointer; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+        .card.matched { visibility: hidden; opacity: 0; transition: visibility 0s 0.5s, opacity 0.5s; }
+
+        .card-face {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; padding: 10px; text-align: center; box-sizing: border-box;
+        }
+
+        .card-front {
+            background: var(--card-bg);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 20px);
+            color: white; font-size: 2rem; border: 3px solid white;
+        }
+
+        .card-back { background: white; transform: rotateY(180deg); border: 3px solid var(--card-bg); font-size: 1rem; font-weight: 800; }
+        .card-back img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+
+        /* --- BẢNG XẾP HẠNG & HIỆU ỨNG --- */
+        .leaderboard-container {
+            width: 100%; background: white; border-radius: 15px; padding: 20px;
+            margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: none;
+        }
+        .leaderboard-title { text-align: center; color: #d87093; margin-top: 0; }
+        .lb-entry { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--pink-pastel); font-weight: bold;}
+
+        .particle { position: absolute; pointer-events: none; animation: floatUp 1s ease-out forwards; font-size: 1.5rem; z-index: 50; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+        @media (max-width: 500px) {
+            .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .card-back { font-size: 0.8rem; }
+            .wrapper { width: 90%; padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container" id="loginScreen">
+        <div class="wrapper">
+            <form action="javascript:void(0);" onsubmit="startGame()">
+                <h1>Class Vault 💌</h1>
+                <p class="subtitle">Nhập thông tin để giải mã trái tim</p>
+                
+                <div class="input-box">
+                    <input type="text" id="playerName" placeholder="Tên của nàng thơ là..." required>
+                    <i class='bx bxs-user-heart'></i>
+                </div>
+
+                <div class="input-box">
+                    <input type="password" id="vaultCode" placeholder="Mật mã (Gợi ý: 0803)" required>
+                    <i class='bx bxs-lock-alt'></i>
+                </div>
+
+                <button type="submit" class="btn">Mở khóa Vault 🗝️</button>
+
+                <div class="register-link">
+                    <p>Dành riêng cho các bóng hồng lớp mình 🌸</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="gameArea">
+        <header>
+            <h1>🌸 CLASS VAULT 🌸</h1>
+            <p>Tìm đúng kỷ niệm - Mở khóa trái tim</p>
+        </header>
+
+        <div class="dashboard" id="dashboard">
+            <div>⏳ <span id="timer">90</span>s</div>
+            <div>🔄 Lượt: <span id="flips">0</span></div>
+        </div>
+
+        <div class="leaderboard-container" id="leaderboard">
+            <h3 class="leaderboard-title">🏆 Bảng Xếp Hạng Lớp 🏆</h3>
+            <div id="lb-content"></div>
+        </div>
+
+        <div class="grid" id="gameGrid"></div>
+    </div>
+
+    <script>
+        // 1. DATA CÁ NHÂN HÓA (Bạn thay link ảnh và text ở đây)
+        const deckData = [
+            { id: 1, type: 'text', content: 'Góc sân trường Lê Quý Đôn 🏫' },
+            { id: 1, type: 'img', content: 'https://postimg.cc/5YhyRNh6' },
+            
+            { id: 2, type: 'text', content: 'Cỗ máy nhảy đỉnh nóc của PECY 💃' },
+            { id: 2, type: 'img', content: 'https://postimg.cc/sB8gMgDm' },
+            
+            { id: 3, type: 'text', content: 'Chiến thần cày đề NEC ✍️' },
+            { id: 3, type: 'img', content: 'https://postimg.cc/PLBdtVSk' },
+            
+            { id: 4, type: 'text', content: 'Hào khí Đông A - Đánh tan quân Nguyên 📜' },
+            { id: 4, type: 'img', content: 'https://via.placeholder.com/150/FFFACD/5c4033?text=Anh+Du+An+Lich+Su' },
+            
+            { id: 5, type: 'text', content: 'Đam mê bất diệt giờ ra chơi 🧋' },
+            { id: 5, type: 'text', content: 'Trà Sữa full topping!' },
+            
+            { id: 6, type: 'text', content: 'Nam sinh đẹp trai nhất lớp 😎' },
+            { id: 6, type: 'text', content: '(Do tự ảo tưởng thế thôi)' }
+        ];
+
+        let cards = [], flippedCards = [], matchedPairs = 0, flips = 0, timeLeft = 90;
+        let timerInterval, currentPlayer = "", totalPairs = deckData.length / 2;
+
+        // 2. BẮT ĐẦU GAME TỪ MÀN HÌNH LOGIN
+        function startGame() {
+            const nameInput = document.getElementById('playerName').value.trim();
+            const vaultCode = document.getElementById('vaultCode').value.trim();
+
+            if (vaultCode !== "0803") {
+                return Swal.fire('Sai mật mã!', 'Gợi ý: Ngày Quốc tế Phụ nữ gồm 4 chữ số (DDMM) 😉', 'error');
+            }
+
+            currentPlayer = nameInput;
+            
+            // Hiệu ứng chuyển cảnh
+            const loginScreen = document.getElementById('loginScreen');
+            loginScreen.style.opacity = "0";
+            
+            setTimeout(() => {
+                loginScreen.style.display = 'none';
+                document.getElementById('gameArea').style.display = 'flex';
+                initBoard();
+                startTimer();
+            }, 500);
+        }
+
+        // 3. KHỞI TẠO LƯỚI BÀI
+        function initBoard() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+            cards = [...deckData].sort(() => Math.random() - 0.5); // Xáo trộn bài
+            
+            cards.forEach((data) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.id = data.id;
+                
+                const backContent = data.type === 'img' ? `<img src="${data.content}" alt="memory">` : data.content;
+                
+                card.innerHTML = `
+                    <div class="card-face card-front">💌</div>
+                    <div class="card-face card-back">${backContent}</div>
+                `;
+                card.addEventListener('click', () => handleCardClick(card));
+                grid.appendChild(card);
+            });
+        }
+
+        // 4. LOGIC LẬT BÀI VÀ KIỂM TRA
+        function handleCardClick(card) {
+            if (flippedCards.length >= 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push(card);
+            
+            if (flippedCards.length === 2) {
+                flips++;
+                document.getElementById('flips').innerText = flips;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            const isMatch = c1.dataset.id === c2.dataset.id;
+
+            if (isMatch) {
+                matchedPairs++;
+                createParticles(c1); createParticles(c2);
+                
+                setTimeout(() => {
+                    c1.classList.add('matched'); c2.classList.add('matched');
+                    flippedCards = [];
+                    if (matchedPairs === totalPairs) handleWin();
+                }, 600);
+            } else {
+                setTimeout(() => {
+                    c1.classList.remove('flipped'); c2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        // 5. HIỆU ỨNG HẠT BÚNG LÊN KHI TRÚNG
+        function createParticles(cardElement) {
+            const rect = cardElement.getBoundingClientRect();
+            const particles = ['💖', '✨', '🌸'];
+            for(let i = 0; i < 3; i++) {
+                const p = document.createElement('div');
+                p.classList.add('particle');
+                p.innerText = particles[Math.floor(Math.random() * particles.length)];
+                p.style.left = rect.left + (Math.random() * rect.width) + 'px';
+                p.style.top = rect.top + 'px';
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+        // 6. THỜI GIAN VÀ KẾT THÚC
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft;
+                if (timeLeft <= 0) handleLose();
+            }, 1000);
+        }
+
+        function handleWin() {
+            clearInterval(timerInterval);
+            const timeTaken = 90 - timeLeft;
+            saveScore(currentPlayer, timeTaken, flips);
+            
+            // Pháo hoa
+            const duration = 3 * 1000;
+            const end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#ffb6c1', '#e6e6fa'] });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ffb6c1', '#e6e6fa'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+
+            Swal.fire({
+                title: 'VAULT UNLOCKED! 🗝️',
+                html: `
+                    <div style="text-align: left; font-family: 'Nunito', sans-serif;">
+                        <b>Dear ${currentPlayer},</b><br><br>
+                        Chúc mừng cậu đã giải mã thành công trong <b>${timeTaken}s</b>!<br><br>
+                        Dù là những mật mã hóc búa hay những deadline ngập đầu, các cậu vẫn luôn tỏa sáng theo cách tuyệt vời nhất. Cảm ơn vì đã luôn là những 'nàng thơ' đáng yêu của lớp mình.<br><br>
+                        <i>Giờ thì hãy nhìn ra cửa lớp để nhận món quà ngọt ngào tụi tớ đã chuẩn bị nhé! Happy Women's Day! 💖</i>
+                    </div>
+                `,
+                confirmButtonText: 'Xem Bảng Xếp Hạng 🏆',
+                confirmButtonColor: '#ffb6c1'
+            }).then(() => showLeaderboard());
+        }
+
+        function handleLose() {
+            clearInterval(timerInterval);
+            Swal.fire({
+                icon: 'error', title: 'Hết giờ mất rồi! ⏳',
+                text: 'Mật mã quá khó đúng không? Nhưng đừng lo, các bạn nam vẫn có quà cho cậu!',
+                confirmButtonColor: '#ffb6c1'
+            }).then(() => showLeaderboard());
+        }
+
+        // 7. LƯU VÀ HIỂN THỊ BẢNG XẾP HẠNG (Local Storage)
+        function saveScore(name, time, moves) {
+            let scores = JSON.parse(localStorage.getItem('classVaultScores')) || [];
+            scores.push({ name, time, moves });
+            scores.sort((a, b) => a.time - b.time || a.moves - b.moves);
+            localStorage.setItem('classVaultScores', JSON.stringify(scores));
+        }
+
+        function showLeaderboard() {
+            document.getElementById('gameGrid').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            const lbContainer = document.getElementById('leaderboard');
+            lbContainer.style.display = 'block';
+            
+            let scores = JSON.parse(localStorage.getItem('classVaultScores')) || [];
+            document.getElementById('lb-content').innerHTML = scores.slice(0, 10).map((s, i) => 
+                `<div class="lb-entry">
+                    <span><b>#${i+1}</b> ${s.name}</span>
+                    <span>⏱️ ${s.time}s | 🔄 ${s.moves} lượt</span>
+                </div>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>
